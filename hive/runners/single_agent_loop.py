@@ -23,6 +23,7 @@ class SingleAgentRunner(Runner):
         test_episodes,
         stack_size,
         max_steps_per_episode=27000,
+        learning_buffer="LoFo", 
     ):
         """Initializes the Runner object.
 
@@ -41,6 +42,7 @@ class SingleAgentRunner(Runner):
             stack_size (int): The number of frames in an observation sent to an agent.
             max_steps_per_episode (int): The maximum number of steps to run an episode
                 for.
+            learning_buffer (str): Learning buffer type ("FIFO", "LoFo").
         """
         super().__init__(
             environment,
@@ -51,11 +53,15 @@ class SingleAgentRunner(Runner):
             test_frequency,
             test_episodes,
             max_steps_per_episode,
-            learning_buffer,
         )
         self._transition_info = TransitionInfo(self._agents, stack_size)
+        self._learning_buffer = learning_buffer
 
-    def run_one_step(self, observation, episode_metrics, learning_buffer):
+        # Validate learning buffer type
+        if self._learning_buffer not in ["FIFO", "LoFo"]:
+            raise ValueError(f"Unsupported learning_buffer type: {self._learning_buffer}. Valid options are: 'FIFO', 'LoFo'")
+
+    def run_one_step(self, observation, episode_metrics):
         """Run one step of the training loop.
 
         Args:
@@ -72,7 +78,7 @@ class SingleAgentRunner(Runner):
         next_observation, reward, done, _, other_info = self._environment.step(action)
 
         # FIFO baseline
-        if learning_buffer is "FIFO":
+        if self._learning_buffer == "FIFO":
             info = {
                 "observation": observation,
                 "reward": reward,
@@ -83,7 +89,7 @@ class SingleAgentRunner(Runner):
             if self._training:
                 agent.update(copy.deepcopy(info))
         # LoFo_v1 baseline   
-        elif learning_buffer is "LoFo":
+        else:
             info = {
                 "observation": stacked_observation,
                 "reward": reward,

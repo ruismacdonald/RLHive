@@ -26,6 +26,7 @@ class CircularReplayBuffer(BaseReplayBuffer):
         reward_dtype=np.float32,
         extra_storage_types=None,
         num_players_sharing_buffer: int = None,
+        **kwargs,
     ):
         """Constructor for CircularReplayBuffer.
 
@@ -71,7 +72,7 @@ class CircularReplayBuffer(BaseReplayBuffer):
         self._n_step = n_step
         self._gamma = gamma
         self._discount = np.asarray(
-            [self._gamma ** i for i in range(self._n_step)],
+            [self._gamma**i for i in range(self._n_step)],
             dtype=self._specs["reward"][0],
         )
         self._episode_start = True
@@ -445,10 +446,10 @@ class SimpleReplayBuffer(BaseReplayBuffer):
 
 
 def str_to_dtype(dtype):
-    if isinstance(dtype, type):
+    if isinstance(dtype, type) or isinstance(dtype, np.dtype):
         return dtype
     elif dtype.startswith("np.") or dtype.startswith("numpy."):
-        return np.typeDict[dtype.split(".")[1]]
+        return np.sctypeDict[dtype.split(".")[1]]
     else:
         type_dict = {
             "int": int,

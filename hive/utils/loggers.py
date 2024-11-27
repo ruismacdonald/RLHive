@@ -181,16 +181,16 @@ class ScheduledLogger(Logger):
         """
         return self._logger_schedules[timescale].get_value()
 
-    def save(self, dir_name):
+    def save(self, dir_name, run_name):
         logger_state = Chomp()
         logger_state.timescales = self._timescales
         logger_state.schedules = self._logger_schedules
         logger_state.steps = self._steps
-        logger_state.save(os.path.join(dir_name, "logger_state.p"))
+        logger_state.save(os.path.join(dir_name, run_name, "logger_state.p"))
 
-    def load(self, dir_name):
+    def load(self, dir_name, run_name):
         logger_state = Chomp()
-        logger_state.load(os.path.join(dir_name, "logger_state.p"))
+        logger_state.load(os.path.join(dir_name, run_name, "logger_state.p"))
         self._timescales = logger_state.timescales
         self._logger_schedules = logger_state.schedules
         self._steps = logger_state.steps
@@ -361,13 +361,13 @@ class ChompLogger(ScheduledLogger):
                 {timescale: self._steps[timescale] for timescale in self._timescales}
             )
 
-    def save(self, dir_name):
+    def save(self, dir_name, run_name):
         super().save(dir_name)
-        self._log_data.save(os.path.join(dir_name, "log_data.p"))
+        self._log_data.save(os.path.join(dir_name, run_name, "log_data.p"))
 
-    def load(self, dir_name):
-        super().load(dir_name)
-        self._log_data.load(os.path.join(dir_name, "log_data.p"))
+    def load(self, dir_name, run_name):
+        super().load(dir_name, run_name)
+        self._log_data.load(os.path.join(dir_name, run_name, "log_data.p"))
 
 
 class CompositeLogger(Logger):

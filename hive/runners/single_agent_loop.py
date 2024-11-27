@@ -42,7 +42,7 @@ class SingleAgentRunner(Runner):
             stack_size (int): The number of frames in an observation sent to an agent.
             max_steps_per_episode (int): The maximum number of steps to run an episode
                 for.
-            learning_buffer (str): Learning buffer type ("FIFO", "LoFo").
+            learning_buffer (str): Learning buffer type ("fifo", "lofo").
         """
         super().__init__(
             environment,
@@ -58,8 +58,8 @@ class SingleAgentRunner(Runner):
         self._learning_buffer = learning_buffer
 
         # Validate learning buffer type
-        if self._learning_buffer not in ["FIFO", "LoFo"]:
-            raise ValueError(f"Unsupported learning_buffer type: {self._learning_buffer}. Valid options are: 'FIFO', 'LoFo'")
+        if self._learning_buffer not in ["fifo", "lofo"]:
+            raise ValueError(f"Unsupported learning_buffer type: {self._learning_buffer}. Valid options are: 'fifo', 'lofo'")
 
     def run_one_step(self, observation, episode_metrics):
         """Run one step of the training loop.
@@ -78,7 +78,7 @@ class SingleAgentRunner(Runner):
         next_observation, reward, done, _, other_info = self._environment.step(action)
 
         # FIFO baseline
-        if self._learning_buffer == "FIFO":
+        if self._learning_buffer == "fifo":
             info = {
                 "observation": observation,
                 "reward": reward,
@@ -152,7 +152,7 @@ def set_up_experiment(config):
         utils.seeder.set_global_seed(config["seed"])
 
     # Import these modules if using LoFo buffer
-    if config.get("learning_buffer") == "LoFo":
+    if config.get("learning_buffer") == "lofo":
         from loca3 import envs
         from loca3 import agents as agent_lib
         from loca3 import replays
@@ -189,8 +189,9 @@ def set_up_experiment(config):
     saving_schedule_fn, full_config["saving_schedule"] = schedule.get_schedule(
         config["saving_schedule"], "saving_schedule"
     )
+    run_name = f"{config["run_name"]}_{config["learning_buffer_capacity"]}_{config["seed"]}"
     experiment_manager = experiment.Experiment(
-        config["run_name"], config["save_dir"], saving_schedule_fn()
+        run_name, config["save_dir"], saving_schedule_fn()
     )
     experiment_manager.register_experiment(
         config=full_config,

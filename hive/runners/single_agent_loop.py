@@ -23,6 +23,7 @@ class SingleAgentRunner(Runner):
         test_episodes,
         stack_size,
         max_steps_per_episode=27000,
+        learning_buffer="lofo",
     ):
         """Initializes the Runner object.
 
@@ -41,6 +42,7 @@ class SingleAgentRunner(Runner):
             stack_size (int): The number of frames in an observation sent to an agent.
             max_steps_per_episode (int): The maximum number of steps to run an episode
                 for.
+            learning_buffer (str): Learning buffer type ("fifo", "lofo").
         """
         super().__init__(
             environment,
@@ -51,8 +53,13 @@ class SingleAgentRunner(Runner):
             test_frequency,
             test_episodes,
             max_steps_per_episode,
+            learning_buffer,
         )
         self._transition_info = TransitionInfo(self._agents, stack_size)
+
+        self._learning_buffer = learning_buffer
+        if self._learning_buffer not in ["fifo", "lofo"]:
+            raise ValueError(f"Unsupported learning_buffer type: {self._learning_buffer}. Valid options are: 'fifo', 'lofo'")
 
     def run_one_step(self, observation, episode_metrics):
         """Run one step of the training loop.
@@ -70,15 +77,27 @@ class SingleAgentRunner(Runner):
         action = agent.act(stacked_observation)
         next_observation, reward, done, _, other_info = self._environment.step(action)
 
-        info = {
-            "observation": observation,
-            "reward": reward,
-            "action": action,
-            "done": done,
-            "info": other_info,
-        }
-        if self._training:
-            agent.update(copy.deepcopy(info))
+        if self._learning_buffer == "fifo":
+            info = {
+                "observation": observation,
+                "reward": reward,
+                "action": action,
+                "done": done,
+                "info": other_info,
+            }
+            if self._training:
+                agent.update(copy.deepcopy(info))
+        else:
+            info = {
+                "observation": stacked_observation,
+                "reward": reward,
+                "action": action,
+                "done": done,
+                "info": other_info,
+            }
+            if self._training:
+                agent.update(copy.deepcopy(info))
+            info["observation"] = observation
 
         self._transition_info.record_info(agent, info)
         episode_metrics[agent.id]["reward"] += info["reward"]
@@ -130,6 +149,12 @@ def set_up_experiment(config):
     if "seed" in config:
         utils.seeder.set_global_seed(config["seed"])
 
+    if config.get("learning_buffer") == "lofo":
+        from loca3 import envs
+        from loca3 import agents as agent_lib
+        from loca3 import replays
+        from loca3.agents import qnets
+
     environment_fn, full_config["environment"] = envs.get_env(
         config["environment"], "environment"
     )
@@ -161,8 +186,9 @@ def set_up_experiment(config):
     saving_schedule_fn, full_config["saving_schedule"] = schedule.get_schedule(
         config["saving_schedule"], "saving_schedule"
     )
+    run_name = f"{config["run_name"]}_{config["learning_buffer_capacity"]}_{config["seed"]}"
     experiment_manager = experiment.Experiment(
-        config["run_name"], config["save_dir"], saving_schedule_fn()
+        run_name, config["save_dir"], saving_schedule_fn()
     )
     experiment_manager.register_experiment(
         config=full_config,
@@ -180,6 +206,7 @@ def set_up_experiment(config):
         config.get("test_episodes", 1),
         config.get("stack_size", 1),
         config.get("max_steps_per_episode", 1e9),
+        config.get("learning_buffer"),
     )
     if config.get("resume", False):
         runner.resume()

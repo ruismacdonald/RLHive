@@ -313,15 +313,21 @@ class WandbLogger(ScheduledLogger):
         )
         wandb.log(metrics)
 
-    def log_metrics(self, metrics, prefix):
-        metrics = {f"{prefix}/{name}": value for (name, value) in metrics.items()}
-        metrics.update(
-            {
-                f"{timescale}_step": self._steps[timescale]
-                for timescale in self._timescales
-            }
-        )
-        wandb.log(metrics)
+    def log_metrics(self, metrics, prefix, step_interval=100):
+        # Reduce logging frequency using step_interval
+        if self._steps["global"] % step_interval == 0:
+            metrics = {f"{prefix}/{name}": value for (name, value) in metrics.items()}
+            metrics.update(
+                {
+                    f"{timescale}_step": self._steps[timescale]
+                    for timescale in self._timescales
+                }
+            )
+            # Log only at specified step intervals
+            wandb.log(metrics, step=self._steps["global"], commit=True)
+        else:
+            # Queue logs without committing
+            wandb.log(metrics, step=self._steps["global"], commit=False)
 
 
 class ChompLogger(ScheduledLogger):

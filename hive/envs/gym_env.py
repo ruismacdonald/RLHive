@@ -58,7 +58,15 @@ class GymEnv(BaseEnv):
         return observation, self._turn
 
     def step(self, action):
-        observation, reward, done, info = self._env.step(action)
+        step_result = self._env.step(action)
+        if len(step_result) == 5:
+            observation, reward, terminated, truncated, info = step_result
+            done = terminated or truncated 
+        elif len(step_result) == 4:
+            observation, reward, done, info = step_result
+        else:
+            raise ValueError(f"Unexpected step return length: {len(step_result)}")
+    
         self._turn = (self._turn + 1) % self._num_players
         return observation, reward, done, self._turn, info
 

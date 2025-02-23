@@ -186,7 +186,7 @@ def set_up_experiment(config):
     saving_schedule_fn, full_config["saving_schedule"] = schedule.get_schedule(
         config["saving_schedule"], "saving_schedule"
     )
-    run_name = f"{config["run_name"]}_{config["learning_buffer_capacity"]}_{config["seed"]}"
+    run_name = f"{config["run_name"]}_{config["learning_buffer_size"]}_{config["seed"]}"
     experiment_manager = experiment.Experiment(
         run_name, config["save_dir"], saving_schedule_fn()
     )

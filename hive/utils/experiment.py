@@ -10,7 +10,7 @@ from hive.utils.utils import Chomp, create_folder
 class Experiment(object):
     """Implementation of a simple experiment class."""
 
-    def __init__(self, name, dir_name, schedule):
+    def __init__(self, dir_name, schedule):
         """Initializes an experiment object.
 
         The experiment state is an exposed property of objects of this class. It can
@@ -19,12 +19,10 @@ class Experiment(object):
         this is the various schedules used in the Runner class.
 
         Args:
-            name (str): Name of the experiment.
             dir_name (str): Absolute path to the directory to save/load the experiment.
         """
 
-        self._name = name
-        self._dir_name = os.path.join(dir_name, name)
+        self._dir_name = dir_name
         self._schedule = schedule
         self._step = 0
         create_folder(self._dir_name)

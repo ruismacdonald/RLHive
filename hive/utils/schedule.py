@@ -109,6 +109,7 @@ class SwitchSchedule(Schedule):
 
     def update(self):
         self._steps += 1
+#        print(f"[SwitchSchedule] update called. Steps: {self._steps}, Flip step: {self._flip_step}")
         value = self.get_value()
         return value
 

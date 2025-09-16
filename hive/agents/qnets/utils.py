@@ -28,6 +28,9 @@ def calculate_output_dim(net, input_shape):
 def create_init_weights_fn(initialization_fn):
     """Returns a function that wraps :func:`initialization_function` and applies
     it to modules that have the :attr:`weight` attribute.
+    
+    Uses `initialization_fn` only for ≥2D weight tensors (Conv/Linear). For 1D norm 
+    weights (e.g., LayerNorm/BatchNorm) uses ones, and biases are zeroed.
 
     Args:
         initialization_fn (callable): A function that takes in a tensor and
@@ -42,11 +45,18 @@ def create_init_weights_fn(initialization_fn):
             network.apply(init_fn)
     """
     if initialization_fn is not None:
-
         def init_weights(m):
-            if hasattr(m, "weight"):
-                initialization_fn(m.weight)
-
+            # Weights
+            if hasattr(m, "weight") and m.weight is not None:
+                if m.weight.ndim >= 2:
+                    # For layers with matrix/tensor weights (e.g., Linear/Conv), apply chosen init (keeps weights from being too large/small -> prevents activations from blowing up/shrinking -> prevents backprop gradients from exploding/vanishing)
+                    initialization_fn(m.weight)
+                else:
+                    # For normalization layers (BatchNorm, LayerNorm, have 1D weights), set scale=1 (identity scaling, no effect)
+                    torch.nn.init.ones_(m.weight)
+            # Biases: set shift=0 (neutral offset)
+            if hasattr(m, "bias") and m.bias is not None:
+                torch.nn.init.zeros_(m.bias)
         return init_weights
     else:
         return lambda m: None

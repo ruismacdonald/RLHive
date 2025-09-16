@@ -5,6 +5,29 @@ import gym
 import numpy as np
 
 
+class ExposeSymbolicState(gym.Wrapper):
+    def _snap(self):
+        e = self.env.unwrapped
+        # tailor to your MiniGridLoCA:
+        x, y = int(e.agent_pos[0]), int(e.agent_pos[1])
+        d = int(e.agent_dir)  # 0..3
+        # pack into a small fixed-width vector (fast & pickle-friendly)
+        sym = np.array([x, y, d], dtype=np.int16)
+        return {"symbolic_state": sym}
+
+    def reset(self, **kwargs):
+        obs, info = self.env.reset(**kwargs)
+        info = dict(info or {})
+        info.update(self._snap())
+        return obs, info
+
+    def step(self, action):
+        obs, r, term, trunc, info = self.env.step(action)
+        info = dict(info or {})
+        info.update(self._snap())
+        return obs, r, term, trunc, info
+
+
 class FlattenWrapper(gym.core.ObservationWrapper):
     """
     Flatten the observation to one dimensional vector.

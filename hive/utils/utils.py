@@ -44,8 +44,21 @@ class Seeder:
         torch.manual_seed(self._seed)
         random.seed(self._seed)
         np.random.seed(self._seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+        
         torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
         torch.use_deterministic_algorithms(True)
+        
+        try:
+            torch.backends.cuda.matmul.allow_tf32 = False
+            torch.backends.cudnn.allow_tf32 = False
+        except Exception:
+            pass  # CPU only
+
+        # Fix CPU thread counts to avoid reduction-order drift
+        torch.set_num_threads(1)
 
     def get_new_seed(self):
         """Each time it is called, it increments the current_seed and returns it."""

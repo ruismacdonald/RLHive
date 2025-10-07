@@ -6,7 +6,7 @@ from hive.envs.env_spec import EnvSpec
 
 class GymEnv(BaseEnv):
     """
-    Class for loading gym environments.
+    Gym 0.26.2-compatible wrapper with explicit seeding.
     """
 
     def __init__(self, env_name, num_players=1, **kwargs):
@@ -19,8 +19,17 @@ class GymEnv(BaseEnv):
                 :py:meth:`create_env_spec` can be passed as keyword arguments to this
                 constructor.
         """
+        self._seed = None
         self.create_env(env_name, **kwargs)
         super().__init__(self.create_env_spec(env_name, **kwargs), num_players)
+        
+    def set_seed(self, seed: int):
+        """Call this right after creating the env (from your runner)."""
+        self._seed = int(seed)
+        try: self._env.action_space.seed(self._seed)
+        except Exception: pass
+        try: self._env.observation_space.seed(self._seed)
+        except Exception: pass
 
     def create_env(self, env_name, **kwargs):
         """Function used to create the environment. Subclasses can override this method
@@ -53,9 +62,11 @@ class GymEnv(BaseEnv):
             action_space=action_spaces,
         )
 
-    def reset(self):
-        observation = self._env.reset()
-        return observation, self._turn
+    def reset(self, seed=None):
+        if seed is None:
+            seed = self._seed
+        obs, info = self._env.reset(seed=seed)
+        return obs, info
 
     def step(self, action):
         step_result = self._env.step(action)
@@ -72,9 +83,6 @@ class GymEnv(BaseEnv):
 
     def render(self, mode="rgb_array"):
         return self._env.render(mode=mode)
-
-    def seed(self, seed=None):
-        self._env.seed(seed=seed)
-
+        
     def close(self):
         self._env.close()

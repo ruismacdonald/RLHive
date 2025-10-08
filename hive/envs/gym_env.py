@@ -70,8 +70,8 @@ class GymEnv(BaseEnv):
     def reset(self, seed=None):
         if seed is None:
             seed = self._seed
-        obs, info = self._env.reset(seed=seed)
-        return obs, info
+        observation = self._env.reset(seed=seed)
+        return observation, self._turn
 
     def step(self, action):
         step_result = self._env.step(action)

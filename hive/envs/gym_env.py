@@ -30,6 +30,11 @@ class GymEnv(BaseEnv):
         except Exception: pass
         try: self._env.observation_space.seed(self._seed)
         except Exception: pass
+    
+    # Satisfy BaseEnv's abstract method
+    def seed(self, seed=None):
+        self.set_seed(seed)
+        return [seed]
 
     def create_env(self, env_name, **kwargs):
         """Function used to create the environment. Subclasses can override this method

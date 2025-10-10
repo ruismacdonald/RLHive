@@ -66,12 +66,21 @@ class GymEnv(BaseEnv):
             observation_space=observation_spaces,
             action_space=action_spaces,
         )
-
+    
     def reset(self, seed=None):
         if seed is None:
             seed = self._seed
-        observation = self._env.reset(seed=seed)
-        return observation, self._turn
+
+        try:
+            # Gym >=0.26 API
+            obs, info = self._env.reset(seed=seed)
+            return obs, self._turn
+        except TypeError:
+            # Gym <=0.25 API: must call .seed() separately
+            if seed is not None:
+                self._env.seed(seed)
+            obs = self._env.reset()
+            return obs, self._turn
 
     def step(self, action):
         step_result = self._env.step(action)
